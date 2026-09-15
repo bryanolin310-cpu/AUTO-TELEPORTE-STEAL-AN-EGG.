@@ -1,214 +1,65 @@
 -- ==============================================
--- 🌶️ PIMENTA HOST — Steal An Egg Script
--- ✅ COMPATÍVEL: Delta Executor
--- ✅ FORMATO PRONTO PRA GITHUB
+-- 🎯 TP OVO + VOLTA BASE
 -- ==============================================
 
--- ⚙️ CONFIGURAÇÕES
-local Config = {
-    AutoTP = true,
-    AutoCollect = true,
-    ShowEggInfo = true,
-    ESP_Enabled = true,
-    Keybind_TP = Enum.KeyCode.E,
-    Keybind_Collect = Enum.KeyCode.Q
-}
-
--- 📦 SERVIÇOS
-local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- 🎯 CRIAÇÃO DA INTERFACE
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local TpButton = Instance.new("TextButton")
-local CollectButton = Instance.new("TextButton")
-local ESPButton = Instance.new("TextButton")
-local CloseBtn = Instance.new("TextButton")
+-- 🏠 SALVAR POSIÇÃO DA BASE AO CARREGAR
+local PosicaoBase = nil
+task.wait(2) -- Espera carregar o personagem
+if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    PosicaoBase = LocalPlayer.Character.HumanoidRootPart.CFrame
+    print("🏠 Posição da base salva!")
+end
 
--- 📌 PROPRIEDADES DA INTERFACE
-ScreenGui.Name = "PimentaHub"
-ScreenGui.Parent = game.CoreGui
-
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(255, 107, 53)
-MainFrame.Position = UDim2.new(0.02, 0, 0.02, 0)
-MainFrame.Size = UDim2.new(0, 220, 0, 240)
-MainFrame.Active = true
-MainFrame.Draggable = true
-
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(255, 107, 53)
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "🌶️ PIMENTA HOST"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-
-CloseBtn.Name = "CloseBtn"
-CloseBtn.Parent = MainFrame
-CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-CloseBtn.Position = UDim2.new(1, -30, 0, 5)
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
-
-TpButton.Name = "TpButton"
-TpButton.Parent = MainFrame
-TpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-TpButton.Position = UDim2.new(0, 15, 0, 50)
-TpButton.Size = UDim2.new(1, -30, 0, 40)
-TpButton.Font = Enum.Font.Gotham
-TpButton.Text = "🚀 Auto TP: LIGADO"
-TpButton.TextColor3 = Color3.fromRGB(0, 255, 128)
-TpButton.TextSize = 13
-
-CollectButton.Name = "CollectButton"
-CollectButton.Parent = MainFrame
-CollectButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-CollectButton.Position = UDim2.new(0, 15, 0, 100)
-CollectButton.Size = UDim2.new(1, -30, 0, 40)
-CollectButton.Font = Enum.Font.Gotham
-CollectButton.Text = "📦 Coletar Ovo"
-CollectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CollectButton.TextSize = 13
-
-ESPButton.Name = "ESPButton"
-ESPButton.Parent = MainFrame
-ESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-ESPButton.Position = UDim2.new(0, 15, 0, 150)
-ESPButton.Size = UDim2.new(1, -30, 0, 40)
-ESPButton.Font = Enum.Font.Gotham
-ESPButton.Text = "👁️ ESP: LIGADO"
-ESPButton.TextColor3 = Color3.fromRGB(0, 255, 128)
-ESPButton.TextSize = 13
-
--- 🔄 FUNÇÃO DE TELEPORTE
-local function TeleportToNearestEgg()
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local root = character.HumanoidRootPart
-    local nearestEgg = nil
-    local minDistance = math.huge
+-- 🥚 TELEPORTA PRO OVO MAIS PERTO
+local function TP_Ovo()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local alvo, dist = nil, math.huge
 
     for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("BasePart") and string.match(string.lower(v.Name), "egg") or string.match(string.lower(v.Name), "ovo") then
-            local dist = (v.Position - root.Position).Magnitude
-            if dist < minDistance and dist < 500 then
-                minDistance = dist
-                nearestEgg = v
+        if v:IsA("BasePart") and (string.find(string.lower(v.Name), "egg") or string.find(string.lower(v.Name), "ovo")) then
+            local d = (v.Position - hrp.Position).Magnitude
+            if d < dist and d < 500 then
+                dist = d
+                alvo = v
             end
         end
     end
 
-    if nearestEgg then
-        root.CFrame = CFrame.new(nearestEgg.Position + Vector3.new(0, 3, 0))
-        print("[PIMENTA] Teleportado para: " .. nearestEgg.Name)
+    if alvo then
+        hrp.CFrame = CFrame.new(alvo.Position + Vector3.new(0, 3, 0))
+        print("🥚 TP → " .. alvo.Name)
+        -- 📦 PEGA OVO AUTOMÁTICO
+        task.wait(0.1)
+        firetouchinterest:Fire(alvo, 0)
+        task.wait(0.05)
+        firetouchinterest:Fire(alvo, 1)
+        print("✅ Ovo coletado!")
+    else
+        print("⚠️ Nenhum ovo encontrado!")
     end
 end
 
--- 📦 FUNÇÃO DE COLETAR
-local function CollectEgg()
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        firetouchinterest:Fire(hrp, 1)
-        print("[PIMENTA] Tentando coletar...")
-    end
+-- 🏠 VOLTA PRA BASE
+local function VoltarBase()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") or not PosicaoBase then return end
+    char.HumanoidRootPart.CFrame = PosicaoBase
+    print("🏠 Voltei pra base!")
 end
 
--- 👁️ SISTEMA ESP
-local ESPObjects = {}
-local function CreateESP(part, name)
-    if ESPObjects[part] then return end
-    
-    local esp = Instance.new("BillboardGui")
-    esp.Name = "EggESP"
-    esp.AlwaysOnTop = true
-    esp.Size = UDim2.new(0, 100, 0, 30)
-    esp.Parent = part
-    
-    local txt = Instance.new("TextLabel")
-    txt.BackgroundTransparency = 1
-    txt.Size = UDim2.new(1, 0, 1, 0)
-    txt.Font = Enum.Font.GothamBold
-    txt.Text = "🥚 " .. name
-    txt.TextColor3 = Color3.fromRGB(255, 200, 0)
-    txt.TextSize = 14
-    txt.Parent = esp
-    
-    ESPObjects[part] = esp
-end
-
--- 🔁 LOOP DE DETECÇÃO
-game:GetService("RunService").Heartbeat:Connect(function()
-    if Config.ESP_Enabled then
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if v:IsA("BasePart") and (string.match(string.lower(v.Name), "egg") or string.match(string.lower(v.Name), "ovo")) then
-                if not ESPObjects[v] then
-                    CreateESP(v, v.Name)
-                end
-            end
-        end
-    end
-end)
-
--- ⌨️ TECLAS DE ATALHO
-UIS.InputBegan:Connect(function(input, gp)
+-- ⌨️ TECLAS
+UIS.InputBegan:Connect(function(i, gp)
     if gp then return end
-    
-    if input.KeyCode == Config.Keybind_TP then
-        TeleportToNearestEgg()
-    elseif input.KeyCode == Config.Keybind_Collect then
-        CollectEgg()
-    end
+    if i.KeyCode == Enum.KeyCode.E then TP_Ovo() end      -- E = Ir no ovo + pegar
+    if i.KeyCode == Enum.KeyCode.Q then VoltarBase() end  -- Q = Voltar pra base
 end)
 
--- 🖱️ BOTÕES DA INTERFACE
-TpButton.MouseButton1Click:Connect(function()
-    Config.AutoTP = not Config.AutoTP
-    TpButton.Text = Config.AutoTP and "🚀 Auto TP: LIGADO" or "🚀 Auto TP: DESLIGADO"
-    TpButton.TextColor3 = Config.AutoTP and Color3.fromRGB(0, 255, 128) or Color3.fromRGB(255, 80, 80)
-end)
-
-CollectButton.MouseButton1Click:Connect(function()
-    CollectEgg()
-end)
-
-ESPButton.MouseButton1Click:Connect(function()
-    Config.ESP_Enabled = not Config.ESP_Enabled
-    ESPButton.Text = Config.ESP_Enabled and "👁️ ESP: LIGADO" or "👁️ ESP: DESLIGADO"
-    ESPButton.TextColor3 = Config.ESP_Enabled and Color3.fromRGB(0, 255, 128) or Color3.fromRGB(255, 80, 80)
-    
-    if not Config.ESP_Enabled then
-        for _, esp in pairs(ESPObjects) do
-            esp:Destroy()
-        end
-        ESPObjects = {}
-    end
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- ✅ MENSAGEM DE INÍCIO
-print("======================================")
-print("🌶️ PIMENTA HOST — Steal An Egg Script")
-print("✅ CARREGADO COM SUCESSO!")
-print("⌨️ E = Teleportar | Q = Coletar")
-print("======================================")
+print("✅ CARREGADO! | E = Ovo | Q = Voltar Base")
+ 
