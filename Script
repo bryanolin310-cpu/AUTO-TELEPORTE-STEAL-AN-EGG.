@@ -1,65 +1,253 @@
 -- ==============================================
--- 🎯 TP OVO + VOLTA BASE
+-- 🌶️ PIMENTA HOST — GRÁFICO COMPLETO
+-- ✅ Delta Executor | Steal An Egg
+-- 🎨 Interface bonita | Animações | Botões
 -- ==============================================
 
-local UIS = game:GetService("UserInputService")
-local Workspace = game:GetService("Workspace")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+-- ⚙️ CONFIGURAÇÕES
+local Config = {
+    Keybind_TP = Enum.KeyCode.E,
+    Keybind_Voltar = Enum.KeyCode.Q,
+    MaxDistancia = 500,
+    AlturaOvo = 3
+}
 
--- 🏠 SALVAR POSIÇÃO DA BASE AO CARREGAR
+-- 📦 SERVIÇOS
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local Tween = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local Tema = {
+    Fundo = Color3.fromRGB(15, 15, 25),
+    Destaque = Color3.fromRGB(255, 107, 53),
+    Botao = Color3.fromRGB(35, 35, 50),
+    BotaoHover = Color3.fromRGB(50, 50, 75),
+    Verde = Color3.fromRGB(0, 255, 128),
+    Texto = Color3.fromRGB(255, 255, 255)
+}
+
+-- 🏠 SALVAR BASE
 local PosicaoBase = nil
-task.wait(2) -- Espera carregar o personagem
+task.wait(1.5)
 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
     PosicaoBase = LocalPlayer.Character.HumanoidRootPart.CFrame
-    print("🏠 Posição da base salva!")
 end
 
--- 🥚 TELEPORTA PRO OVO MAIS PERTO
-local function TP_Ovo()
+-- 🎯 ACHAR OVO MAIS PERTO
+local function AcharOvo()
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     local hrp = char.HumanoidRootPart
     local alvo, dist = nil, math.huge
 
     for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("BasePart") and (string.find(string.lower(v.Name), "egg") or string.find(string.lower(v.Name), "ovo")) then
-            local d = (v.Position - hrp.Position).Magnitude
-            if d < dist and d < 500 then
-                dist = d
-                alvo = v
+        if v:IsA("BasePart") then
+            local nome = string.lower(v.Name)
+            if string.find(nome, "egg") or string.find(nome, "ovo") then
+                local d = (v.Position - hrp.Position).Magnitude
+                if d < dist and d <= Config.MaxDistancia then
+                    dist = d
+                    alvo = v
+                end
             end
         end
     end
-
-    if alvo then
-        hrp.CFrame = CFrame.new(alvo.Position + Vector3.new(0, 3, 0))
-        print("🥚 TP → " .. alvo.Name)
-        -- 📦 PEGA OVO AUTOMÁTICO
-        task.wait(0.1)
-        firetouchinterest:Fire(alvo, 0)
-        task.wait(0.05)
-        firetouchinterest:Fire(alvo, 1)
-        print("✅ Ovo coletado!")
-    else
-        print("⚠️ Nenhum ovo encontrado!")
-    end
+    return alvo
 end
 
--- 🏠 VOLTA PRA BASE
+-- 🚀 TP + PEGAR OVO
+local function TP_Ovo()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local ovo = AcharOvo()
+
+    if ovo then
+        hrp.CFrame = CFrame.new(ovo.Position + Vector3.new(0, Config.AlturaOvo, 0))
+        task.wait(0.15)
+        firetouchinterest:Fire(ovo, 0)
+        task.wait(0.05)
+        firetouchinterest:Fire(ovo, 1)
+        return true
+    end
+    return false
+end
+
+-- 🏠 VOLTAR BASE
 local function VoltarBase()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") or not PosicaoBase then return end
     char.HumanoidRootPart.CFrame = PosicaoBase
-    print("🏠 Voltei pra base!")
 end
 
--- ⌨️ TECLAS
-UIS.InputBegan:Connect(function(i, gp)
-    if gp then return end
-    if i.KeyCode == Enum.KeyCode.E then TP_Ovo() end      -- E = Ir no ovo + pegar
-    if i.KeyCode == Enum.KeyCode.Q then VoltarBase() end  -- Q = Voltar pra base
+-- 🎨 CRIAR INTERFACE GRÁFICA
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PimentaHost"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Tema.Fundo
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.02, 0, 0.02, 0)
+MainFrame.Size = UDim2.new(0, 260, 0, 320)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+
+-- CANTOS ARREDONDADOS
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 12)
+Corner.Parent = MainFrame
+
+-- SOMBRA
+local Sombra = Instance.new("UIStroke")
+Sombra.Color = Tema.Destaque
+Sombra.Thickness = 2
+Sombra.Transparency = 0.8
+Sombra.Parent = MainFrame
+
+-- 🏷️ TITULO
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Tema.Destaque
+TitleBar.Size = UDim2.new(1, 0, 0, 45)
+
+local CornerTitle = Instance.new("UICorner")
+CornerTitle.CornerRadius = UDim.new(0, 12)
+CornerTitle.Parent = TitleBar
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Parent = TitleBar
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "🌶️ PIMENTA HOST"
+Title.TextColor3 = Tema.Texto
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- ❌ BOTÃO FECHAR
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Parent = TitleBar
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+CloseBtn.Position = UDim2.new(1, -35, 0.5, -15)
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Tema.Texto
+CloseBtn.TextSize = 16
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseBtn
+
+-- 🟢 BOTÃO TP OVO
+local BtnTP = Instance.new("TextButton")
+BtnTP.Name = "BtnTP"
+BtnTP.Parent = MainFrame
+BtnTP.BackgroundColor3 = Tema.Botao
+BtnTP.Position = UDim2.new(0, 20, 0, 70)
+BtnTP.Size = UDim2.new(1, -40, 0, 55)
+BtnTP.Font = Enum.Font.GothamBold
+BtnTP.Text = "🥚 TELEPORTAR OVO"
+BtnTP.TextColor3 = Tema.Verde
+BtnTP.TextSize = 15
+
+local BtnTPCorner = Instance.new("UICorner")
+BtnTPCorner.CornerRadius = UDim.new(0, 10)
+BtnTPCorner.Parent = BtnTP
+
+-- 🔵 BOTÃO VOLTAR BASE
+local BtnBase = Instance.new("TextButton")
+BtnBase.Name = "BtnBase"
+BtnBase.Parent = MainFrame
+BtnBase.BackgroundColor3 = Tema.Botao
+BtnBase.Position = UDim2.new(0, 20, 0, 140)
+BtnBase.Size = UDim2.new(1, -40, 0, 55)
+BtnBase.Font = Enum.Font.GothamBold
+BtnBase.Text = "🏠 VOLTAR PRA BASE"
+BtnBase.TextColor3 = Tema.Texto
+BtnBase.TextSize = 15
+
+local BtnBaseCorner = Instance.new("UICorner")
+BtnBaseCorner.CornerRadius = UDim.new(0, 10)
+BtnBaseCorner.Parent = BtnBase
+
+-- ⚙️ INFO TECLAS
+local Info = Instance.new("TextLabel")
+Info.Name = "Info"
+Info.Parent = MainFrame
+Info.BackgroundTransparency = 1
+Info.Position = UDim2.new(0, 20, 0, 220)
+Info.Size = UDim2.new(1, -40, 0, 80)
+Info.Font = Enum.Font.Gotham
+Info.Text = "⌨️ E = TP Ovo | Q = Voltar Base\n\n✅ Auto-coleta ativada!"
+Info.TextColor3 = Color3.fromRGB(180, 180, 180)
+Info.TextSize = 13
+Info.TextWrapped = true
+Info.TextXAlignment = Enum.TextXAlignment.Center
+
+-- ✅ ANIMAÇÃO DE ENTRADA
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 260, 0, 320)}):Play()
+
+-- 🖱️ EVENTOS DOS BOTÕES — HOVER
+BtnTP.MouseEnter:Connect(function()
+    TweenService:Create(BtnTP, TweenInfo.new(0.2), {BackgroundColor3 = Tema.BotaoHover}):Play()
+end)
+BtnTP.MouseLeave:Connect(function()
+    TweenService:Create(BtnTP, TweenInfo.new(0.2), {BackgroundColor3 = Tema.Botao}):Play()
 end)
 
-print("✅ CARREGADO! | E = Ovo | Q = Voltar Base")
- 
+BtnBase.MouseEnter:Connect(function()
+    TweenService:Create(BtnBase, TweenInfo.new(0.2), {BackgroundColor3 = Tema.BotaoHover}):Play()
+end)
+BtnBase.MouseLeave:Connect(function()
+    TweenService:Create(BtnBase, TweenInfo.new(0.2), {BackgroundColor3 = Tema.Botao}):Play()
+end)
+
+-- 🖱️ CLICAR NOS BOTÕES
+BtnTP.MouseButton1Click:Connect(function()
+    local ok = TP_Ovo()
+    BtnTP.Text = ok and "✅ OVO COLETADO!" or "⚠️ NENHUM OVO"
+    task.wait(1.5)
+    BtnTP.Text = "🥚 TELEPORTAR OVO"
+end)
+
+BtnBase.MouseButton1Click:Connect(function()
+    VoltarBase()
+    BtnBase.Text = "✅ VOLTOU!"
+    task.wait(1.5)
+    BtnBase.Text = "🏠 VOLTAR PRA BASE"
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+    task.wait(0.3)
+    ScreenGui:Destroy()
+end)
+
+-- ⌨️ TECLAS DE ATALHO
+UIS.InputBegan:Connect(function(entrada, gp)
+    if gp then return end
+    if entrada.KeyCode == Config.Keybind_TP then
+        TP_Ovo()
+    elseif entrada.KeyCode == Config.Keybind_Voltar then
+        VoltarBase()
+    end
+end)
+
+-- ✅ INÍCIO
+print("======================================")
+print("🌶️ PIMENTA HOST — GRÁFICO CARREGADO!")
+print("✅ Interface pronta | Botões + Teclas")
+print("⌨️ E = Ovo | Q = Base | Clique também!")
+print("======================================")
